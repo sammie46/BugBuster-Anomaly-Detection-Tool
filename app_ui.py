@@ -7,7 +7,6 @@ import json
 ONLINE_LOG = 'app.log'
 BASELINES_FILE = 'user_baselines.json'
 
-# --- Настройки на страницата (Тъмна тема) ---
 st.set_page_config(
     page_title="BugBuster AIC",
     page_icon="🐛",
@@ -15,7 +14,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Промяна на цветовете чрез CSS (за тъмна тема и червени алерти)
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: #FAFAFA; }
@@ -25,8 +23,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Функции за извличане на данни ---
-@st.cache_data(ttl=1) # Кешираме за 1 сек, за да е бързо
+@st.cache_data(ttl=1) 
 def load_data():
     if not os.path.exists(ONLINE_LOG):
         return pd.DataFrame()
@@ -52,7 +49,7 @@ def load_baselines():
             return json.load(f)
     return {}
 
-# --- ОСНОВЕН ИНТЕРФЕЙС ---
+
 
 st.title("🐛 BugBuster: Anomaly Intelligence Center")
 st.markdown("Real-time System Degradation & Threat Monitoring")
@@ -63,11 +60,11 @@ baselines = load_baselines()
 if df.empty:
     st.info("Waiting for telemetry data... Please start 'stream_online.py'.")
 else:
-    # --- 1. Изчисляване на метрики ---
+  
     total_logs = len(df)
     unique_users = df['User'].nunique()
     
-    # Търсим аномалии в последните 10 лога
+ 
     recent_logs = df.tail(10)
     anomalies_detected = 0
     attacker = None
@@ -80,11 +77,11 @@ else:
                  if row['Type'] == 'ERROR' and row['Payload'] > 5000:
                      attacker = user
 
-    # --- 2. ALERT BANNER (Показва се само при атака) ---
+  
     if attacker:
         st.markdown(f'<div class="alert-banner">🚨 CRITICAL ALERT: Brute-force & Anomalous Payload detected from user: {attacker}! 🚨</div>', unsafe_allow_html=True)
 
-    # --- 3. KPI КАРТИ ---
+
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric(label="Total Logs Analyzed", value=total_logs, delta=f"+{len(recent_logs)}/sec")
@@ -98,22 +95,22 @@ else:
 
     st.divider()
 
-    # --- 4. ГРАФИКА: ТРАФИК vs БАЗОВА ЛИНИЯ ---
+ 
     st.subheader("System Traffic & Degradation Pulse")
     
-    # Подготвяме данни за графиката (изчисляваме пълзяща средна на Payload-а)
+
     df['Rolling_Payload'] = df['Payload'].rolling(window=5, min_periods=1).mean()
     chart_data = df.tail(40)[['Timestamp', 'Rolling_Payload']].set_index('Timestamp')
     
-    # Добавяме изкуствена "Базова линия" на графиката (напр. 500B)
+
     chart_data['Baseline (Normal)'] = 500 
     
-    # Рисуваме графиката
-    st.line_chart(chart_data, color=["#F44336", "#4CAF50"]) # Червено за трафика, Зелено за нормата
+   
+    st.line_chart(chart_data, color=["#F44336", "#4CAF50"]) 
 
-    # --- 5. ПОСЛЕДНИ СЪБИТИЯ ---
+
     st.subheader("Recent Activity Feed")
-    # Оцветяваме грешките в червено в таблицата
+
     def highlight_errors(val):
         color = 'red' if val == 'ERROR' else 'green'
         return f'color: {color}'
@@ -121,6 +118,6 @@ else:
     display_df = df.tail(10)[['Timestamp', 'Type', 'User', 'Payload']]
     st.dataframe(display_df.style.map(highlight_errors, subset=['Type']), width="stretch")
 
-# Автоматично опресняване на всеки 1 секунда
+
 time.sleep(1)
 st.rerun()

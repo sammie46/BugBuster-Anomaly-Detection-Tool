@@ -13,18 +13,18 @@ def build_trends():
 
     user_data = {}
 
-    # 1. Четене на историческите данни и събиране на статистика
+  
     with open(HISTORICAL_LOG, 'r') as f:
         for line in f:
             try:
-                # Изваждаме името на потребителя
+             
                 user = line.split("User '")[1].split("'")[0]
                 
-                # Изваждаме размера на пакета (Payload)
+             
                 payload_str = line.split("Payload: ")[1].replace("B\n", "").replace("B", "").strip()
                 payload = int(payload_str)
                 
-                # Проверяваме дали редът е грешка
+            
                 is_error = 1 if "ERROR" in line else 0
 
                 if user not in user_data:
@@ -35,11 +35,11 @@ def build_trends():
                 user_data[user]["payloads"].append(payload)
                 
             except Exception as e:
-                continue # Игнорираме, ако някой ред е счупен
+                continue 
 
     baselines = {}
     
-    # 2. Изчисляване на Тренд (Базова линия) за всеки потребител
+   
     for user, data in user_data.items():
         total = data["total_events"]
         error_rate = data["errors"] / total if total > 0 else 0
@@ -47,12 +47,12 @@ def build_trends():
         max_payload = max(data["payloads"])
         
         baselines[user] = {
-            "normal_error_rate": round(error_rate, 3), # напр. 0.05 е 5%
+            "normal_error_rate": round(error_rate, 3), 
             "avg_payload": round(avg_payload, 2),
             "max_historical_payload": max_payload
         }
 
-    # 3. Запазване на "наученото" във файл, за да го ползваме на живо
+   
     with open(BASELINES_FILE, 'w') as f:
         json.dump(baselines, f, indent=4)
 
