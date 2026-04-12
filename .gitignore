@@ -1,0 +1,6 @@
+__pycache__/
+*.log
+user_baselines.json
+.DS_Store
+
+.env
