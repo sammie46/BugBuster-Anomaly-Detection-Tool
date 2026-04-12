@@ -1,4 +1,3 @@
-Markdown
 # 🐛 BugBuster: Anomaly Intelligence Center (AIC)
 
 **BugBuster** is an automated, real-time telemetry analysis and anomaly detection system developed for the AmCham Hackathon 2026. 
