@@ -1,5 +1,5 @@
 # 🐛 BugBuster: Anomaly Detection Tool
-**AmCham Hackathon 2026**
+**Developed for the AmCham Hackathon 2026**
 
 
 ## 📖 Project Description
@@ -13,7 +13,7 @@ Traditional monitoring relies on static rules that often miss subtle, gradual is
 * **Dynamic ML Baselines:** Uses an Isolation Forest machine learning model to learn normal system behavior from historical logs.
 * **Seasonality Awareness:** Natively understands that normal traffic differs between day and night, reducing false positive alerts during off-hours.
 * **Custom Detection Algorithm:** Evaluates live logs against the ML baseline using a custom Z-score weighted formula.
-* **Automated Alerting:** Dispatches real-time Slack notifications when the anomaly score exceeds critical thresholds.
+* **Actionable Insights & Smart Alerting:** Dispatches real-time, context-aware Slack notifications. Instead of just sending raw errors, the system provides immediate **Suggested Actions** (e.g., "Check auto-scaling rules" vs. "Block external IPs") to drastically reduce Mean Time To Resolution (MTTR).
 
 ## 🎯 Detected Anomalies
 The tool is designed to catch three primary cases based on global system metrics:
