@@ -1,62 +1,68 @@
-# 🐛 BugBuster: Anomaly Intelligence Center (AIC)
+# 🐛 BugBuster: Anomaly Detection Tool
+**AmCham Hackathon 2026**
 
-**BugBuster** is an automated, real-time telemetry analysis and anomaly detection system developed for the AmCham Hackathon 2026. 
 
-By leveraging User and Entity Behavior Analytics (UEBA), BugBuster establishes baseline behavioral profiles for system users and proactively detects performance degradation, brute-force attacks, and payload anomalies before they cause critical system failures.
+## 📖 Project Description
+**BugBuster** is a proactive anomaly detection tool designed to identify system degradations and security threats in global telemetry data. 
 
-## 🎯 The Business Value
-In modern enterprise environments, traditional rule-based security systems generate thousands of "false positive" alerts, causing **Alert Fatigue** for Security Operations Centers (SOC). 
+Traditional monitoring relies on static rules that often miss subtle, gradual issues (like slow memory leaks or API latency spikes) until they cause a critical outage. BugBuster solves this by using Machine Learning to understand the "normal" global trends of a system and automatically triggering alerts when current traffic deviates from these learned baselines.
 
-BugBuster solves this by learning the *unique behavioral baseline* of every single user. 
-* **Proactive, not Reactive:** We don't wait for a system crash. We detect the microscopic degradation leading up to it.
-* **Zero Alert Fatigue:** By using Machine Learning (UEBA), BugBuster only alerts the team when an action statistically deviates from that specific user's historical norm.
-* **Cost-Efficient:** Prevents costly enterprise downtime by catching brute-force attacks and payload spikes in their infancy.
+*Note: For the purpose of this hackathon demonstration, we built custom data generator scripts to simulate both normal server traffic and specific attack vectors. The core product, however, is the anomaly detection engine itself.*
 
-## 🌟 Key Features
-* **Historical Profiling (ML Phase):** Analyzes past logs to build individual user baselines (normal error rates, max payload sizes).
-* **Real-time Monitoring:** Streams live telemetry data and compares it against established baselines.
-* **Early Warning System:** Detects degradation trends (e.g., massive payload spikes, repeated failed logins) and instantly triggers a **Slack Webhook** alert to the engineering team.
-* **SOC Dashboard:** A dark-themed, interactive Streamlit UI for the Security Operations Center to visualize traffic and degradation in real-time.
+## ✨ Core Capabilities
+* **Dynamic ML Baselines:** Uses an Isolation Forest machine learning model to learn normal system behavior from historical logs.
+* **Seasonality Awareness:** Natively understands that normal traffic differs between day and night, reducing false positive alerts during off-hours.
+* **Custom Detection Algorithm:** Evaluates live logs against the ML baseline using a custom Z-score weighted formula.
+* **Automated Alerting:** Dispatches real-time Slack notifications when the anomaly score exceeds critical thresholds.
 
-## 🏗️ Architecture & Microservices
-The system is built with a modular approach, separating data generation, machine learning, and visualization:
-1. `generate_history.py` - Synthesizes realistic historical telemetry.
-2. `trend_builder.py` - Parses historical logs to build `user_baselines.json`.
-3. `stream_online.py` - Simulates real-time system traffic and injects a live degradation/attack scenario.
-4. `anomaly_detector.py` - The backend engine that detects baseline deviations and sends Slack alerts.
-5. `app_ui.py` - The Streamlit graphical interface.
+## 🎯 Detected Anomalies
+The tool is designed to catch three primary cases based on global system metrics:
+1. **Performance Degradation:** Sudden spikes in Global API Latency and CPU Usage.
+2. **Brute-Force Attacks:** Unexpected surges in the Global Error Rate (e.g., mass HTTP 401/500 errors).
+3. **Payload Anomalies:** Suspiciously large data transfers (Data Exfiltration), especially during low-traffic off-hours.
 
-## 🚀 How to Run the Demo
+## 🏗️ Project Structure
 
-### 1. Install Dependencies
+### 1. The Core Tool (Anomaly Detection Engine)
+* `trend_builder.py`: The ML Engine. Analyzes historical logs and builds the statistical baseline boundaries (`trends.json`).
+* `anomaly_detector.py`: The live detection script. Reads the data stream, applies the detection algorithm, and triggers Slack alerts.
+* `app_ui.py`: A Streamlit dashboard for real-time visualization of system metrics and detected anomalies.
+
+### 2. The Demo Harness (Data Simulators)
+*(Used only to demonstrate the tool's capabilities without a live production environment)*
+* `generate_history.py`: Generates 72 hours of mock historical telemetry with day/night seasonality.
+* `stream_online.py`: Simulates a live log stream, injecting normal traffic and triggering the 3 anomaly cases for the demo.
+
+## 🚀 How to Run the Demo Locally
+
+### 1. Install requirements:
 ```bash
 pip install -r requirements.txt
 ```
 
-###  2. Prepare the Environment (Train the Model)
-Run these commands sequentially to generate history and build baselines:
-
-
+### 2. Configure Slack Webhook:
 ```bash
-python generate_history.py
+SLACK_WEBHOOK_URL="[https://hooks.slack.com/services/YOUR/WEBHOOK/HERE](https://hooks.slack.com/services/YOUR/WEBHOOK/HERE)"
+```
+
+### 3. Run the simulation (in separate terminals):
+
+Terminal 1: Build the ML baseline from simulated history
+```bash
 python trend_builder.py
 ```
 
-### 3. Start the Live Simulation
-Open three separate terminals to visualize the full architecture:
-
-Terminal 1 (Start the Backend Watchdog):
-```bash
-python anomaly_detector.py
-```
-
-Terminal 2 (Start the Dashboard):
-```bash
-streamlit run app_ui.py
-```
-Terminal 3 (Inject Live Traffic & Attack):
+Terminal 2: Start generating the live fake traffic & attacks
 ```bash
 python stream_online.py
 ```
-Wait 15 seconds after starting the live traffic to observe the system detect the anomaly, turn the dashboard red, and receive a Slack notification.
+
+Terminal 3: Start the actual Anomaly Detector
+```bash
+python anomaly_detector.py
+```
+Terminal 4: Launch the UI
+```bash
+streamlit run app_ui.py
+```
 

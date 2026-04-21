@@ -4,8 +4,8 @@ import time
 import os
 import json
 
-ONLINE_LOG = 'app.log'
-BASELINES_FILE = 'user_baselines.json'
+ONLINE_LOG = 'online_data.log'
+TRENDS_FILE = 'trends.json'
 
 st.set_page_config(
     page_title="BugBuster AIC",
@@ -17,9 +17,8 @@ st.set_page_config(
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: #FAFAFA; }
-    .metric-card { background-color: #1E2127; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50; }
-    .metric-alert { border-left: 4px solid #F44336; background-color: #2D1A1A; }
     .alert-banner { background-color: #F44336; color: white; padding: 20px; border-radius: 8px; font-weight: bold; font-size: 20px; text-align: center; margin-bottom: 20px;}
+    .normal-banner { background-color: #4CAF50; color: white; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 16px; text-align: center; margin-bottom: 20px;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -27,97 +26,81 @@ st.markdown("""
 def load_data():
     if not os.path.exists(ONLINE_LOG):
         return pd.DataFrame()
-    
-    data = []
-    with open(ONLINE_LOG, 'r') as f:
-        for line in f:
-            try:
-                parts = line.strip().split(' ', 2)
-                if len(parts) >= 3:
-                    timestamp = f"{parts[0]} {parts[1]}"
-                    log_type = "ERROR" if "ERROR:" in parts[2] else "INFO"
-                    user = parts[2].split("User '")[1].split("'")[0]
-                    payload = int(parts[2].split("Payload: ")[1].replace("B", ""))
-                    data.append({"Timestamp": timestamp, "Type": log_type, "User": user, "Payload": payload, "Raw": line.strip()})
-            except:
-                pass
-    return pd.DataFrame(data)
+    try:
+       
+        df = pd.read_csv(ONLINE_LOG, names=["Timestamp", "Latency", "CPU", "ErrorRate", "Payload"])
+        return df
+    except:
+        return pd.DataFrame()
 
-def load_baselines():
-    if os.path.exists(BASELINES_FILE):
-        with open(BASELINES_FILE, 'r') as f:
+def load_trends():
+    if os.path.exists(TRENDS_FILE):
+        with open(TRENDS_FILE, 'r') as f:
             return json.load(f)
     return {}
 
-
-
 st.title("🐛 BugBuster: Anomaly Intelligence Center")
-st.markdown("Real-time System Degradation & Threat Monitoring")
+st.markdown("Real-time ML Global System Degradation & Threat Monitoring")
 
 df = load_data()
-baselines = load_baselines()
+trends = load_trends()
 
 if df.empty:
-    st.info("Waiting for telemetry data... Please start 'stream_online.py'.")
+    st.info("Waiting for telemetry data... Please run 'python stream_online.py'.")
 else:
-  
-    total_logs = len(df)
-    unique_users = df['User'].nunique()
     
- 
-    recent_logs = df.tail(10)
-    anomalies_detected = 0
-    attacker = None
+    latest = df.iloc[-1]
     
-    for _, row in recent_logs.iterrows():
-        user = row['User']
-        if user in baselines:
-            if row['Payload'] > baselines[user]['max_historical_payload'] * 2 or row['Type'] == 'ERROR':
-                 anomalies_detected += 1
-                 if row['Type'] == 'ERROR' and row['Payload'] > 5000:
-                     attacker = user
 
-  
-    if attacker:
-        st.markdown(f'<div class="alert-banner">🚨 CRITICAL ALERT: Brute-force & Anomalous Payload detected from user: {attacker}! 🚨</div>', unsafe_allow_html=True)
+    alert_msg = ""
+    is_anomaly = False
+    
+    if latest['Latency'] > 1000 or latest['CPU'] > 85:
+        is_anomaly = True
+        alert_msg = f"🚨 CRITICAL ALERT: Performance Degradation! (Latency: {latest['Latency']}ms, CPU: {latest['CPU']}%)"
+    elif latest['ErrorRate'] > 15:
+        is_anomaly = True
+        alert_msg = f"🚨 CRITICAL ALERT: Distributed Brute-Force Detected! (Error Rate: {latest['ErrorRate']}%)"
+    elif latest['Payload'] > 2000:
+        is_anomaly = True
+        alert_msg = f"🚨 CRITICAL ALERT: Payload Anomaly / Data Exfiltration! (Payload: {latest['Payload']}KB)"
 
+    if is_anomaly:
+        st.markdown(f'<div class="alert-banner">{alert_msg}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="normal-banner">✅ System operates within normal ML baselines</div>', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns(3)
+   
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric(label="Total Logs Analyzed", value=total_logs, delta=f"+{len(recent_logs)}/sec")
+        st.metric(label="Global API Latency", value=f"{latest['Latency']} ms", delta="Spike" if latest['Latency'] > 1000 else "Normal", delta_color="inverse" if latest['Latency'] > 1000 else "normal")
     with col2:
-         st.metric(label="Active Users", value=unique_users)
+        st.metric(label="CPU Usage", value=f"{latest['CPU']} %", delta="High Load" if latest['CPU'] > 85 else "Normal", delta_color="inverse" if latest['CPU'] > 85 else "normal")
     with col3:
-        if anomalies_detected > 0:
-            st.metric(label="Security Alerts (Recent)", value=anomalies_detected, delta="High Threat", delta_color="inverse")
-        else:
-            st.metric(label="Security Alerts (Recent)", value=0, delta="Stable", delta_color="normal")
+        st.metric(label="Global Error Rate", value=f"{latest['ErrorRate']} %", delta="Attack Suspected" if latest['ErrorRate'] > 15 else "Stable", delta_color="inverse" if latest['ErrorRate'] > 15 else "normal")
+    with col4:
+        st.metric(label="Avg Payload", value=f"{latest['Payload']} KB", delta="Exfiltration" if latest['Payload'] > 2000 else "Normal", delta_color="inverse" if latest['Payload'] > 2000 else "normal")
 
     st.divider()
 
  
-    st.subheader("System Traffic & Degradation Pulse")
+    st.subheader("System Degradation Pulse (Real-time)")
     
+    chart_data = df.tail(50).copy()
+    chart_data = chart_data.set_index('Timestamp')
+    
+    col_chart1, col_chart2 = st.columns(2)
+    with col_chart1:
+        st.markdown("**API Latency (ms)**")
+        st.line_chart(chart_data['Latency'], color="#F44336")
+    with col_chart2:
+        st.markdown("**CPU Usage (%)**")
+        st.line_chart(chart_data['CPU'], color="#4CAF50")
 
-    df['Rolling_Payload'] = df['Payload'].rolling(window=5, min_periods=1).mean()
-    chart_data = df.tail(40)[['Timestamp', 'Rolling_Payload']].set_index('Timestamp')
-    
-
-    chart_data['Baseline (Normal)'] = 500 
-    
    
-    st.line_chart(chart_data, color=["#F44336", "#4CAF50"]) 
-
-
     st.subheader("Recent Activity Feed")
-
-    def highlight_errors(val):
-        color = 'red' if val == 'ERROR' else 'green'
-        return f'color: {color}'
-    
-    display_df = df.tail(10)[['Timestamp', 'Type', 'User', 'Payload']]
-    st.dataframe(display_df.style.map(highlight_errors, subset=['Type']), width="stretch")
-
+    display_df = df.tail(10).sort_index(ascending=False)
+    st.dataframe(display_df, width="stretch")
 
 time.sleep(1)
 st.rerun()

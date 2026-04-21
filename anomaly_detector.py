@@ -2,56 +2,38 @@ import time
 import os
 import json
 import urllib.request
+from datetime import datetime
 from dotenv import load_dotenv
-
 
 load_dotenv()
 
-ONLINE_LOG = 'app.log'
-BASELINES_FILE = 'user_baselines.json'
-
-
+ONLINE_LOG = 'online_data.log'
+TRENDS_FILE = 'trends.json'
 SLACK_WEBHOOK = os.getenv("SLACK_WEBHOOK_URL")
 
-if not SLACK_WEBHOOK:
-    print("⚠️ Security Warning: SLACK_WEBHOOK_URL is missing in .env file!")
-
 def send_slack_notification(message):
-    payload = {"text": f"🚨 *BugBuster ML ALERT* 🚨\n> {message}"}
+    if not SLACK_WEBHOOK: return
+    payload = {"text": f"🚨 *BugBuster Alert* 🚨\n> {message}"}
     data = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(SLACK_WEBHOOK, data=data, headers={'Content-Type': 'application/json'})
-    try:
-        urllib.request.urlopen(req)
-    except Exception as e:
-        print(f"Failed to send Slack alert: {e}")
+    try: urllib.request.urlopen(req)
+    except Exception: pass
 
-def load_baselines():
-    if not os.path.exists(BASELINES_FILE):
-        print("❌ Error: user_baselines.json not found! Run 'trend_builder.py' first.")
-        return None
-    with open(BASELINES_FILE, 'r') as f:
-        return json.load(f)
+def track_and_analyze():
+   
+    if not os.path.exists(TRENDS_FILE):
+        print("❌ Run build_trends.py first!")
+        return
+    with open(TRENDS_FILE, 'r') as f:
+        trends = json.load(f)
 
-def monitor_live_traffic():
-    baselines = load_baselines()
-    if not baselines: return
-
-    print("--- BugBuster: Active ML Anomaly Detection Started ---")
-    print("Watching live traffic and comparing to user baselines...\n")
-
-    if not os.path.exists(ONLINE_LOG):
-        open(ONLINE_LOG, 'w').close()
+    print("🔎Tracking online data, analyzing, and deciding...")
+    if not os.path.exists(ONLINE_LOG): open(ONLINE_LOG, 'w').close()
+    last_alert = 0
 
     with open(ONLINE_LOG, 'r') as f:
-       
-        f.seek(0, os.SEEK_END)
+        f.seek(0, os.SEEK_END) 
         
-       
-        consecutive_errors = {user: 0 for user in baselines.keys()}
-        
-    
-        last_alert_time = {} 
-
         while True:
             line = f.readline()
             if not line:
@@ -59,46 +41,37 @@ def monitor_live_traffic():
                 continue
             
             try:
-            
-                user = line.split("User '")[1].split("'")[0]
-                payload = int(line.split("Payload: ")[1].replace("B\n", "").strip())
-                is_error = "ERROR" in line
-
-                baseline = baselines.get(user)
-                if not baseline:
-                    continue 
-
-                anomaly_reasons = []
-
-             
-                if payload > baseline["max_historical_payload"] * 2:
-                    anomaly_reasons.append(f"Anomalous Payload ({payload}B vs normal max {baseline['max_historical_payload']}B)")
-
-               
-                if is_error:
-                    consecutive_errors[user] += 1
-                else:
-                    consecutive_errors[user] = max(0, consecutive_errors[user] - 1) 
-
-                if consecutive_errors[user] >= 3:
-                    anomaly_reasons.append("Brute-force attack suspected (Multiple failed logins)")
-
                 
-                if anomaly_reasons:
-                    alert_msg = f"User '{user}' behaving suspiciously! Reasons: {', '.join(anomaly_reasons)}"
-                    print(f"⚠️ ANOMALY DETECTED: {alert_msg}")
+                ts_str, lat_str, cpu_str, err_str, pay_str = line.strip().split(',')
+                lat, cpu, err, pay = float(lat_str), float(cpu_str), float(err_str), float(pay_str)
+                dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                
+               
+                f1 = (lat - trends['mu_latency']) / trends['sigma_latency']
+                f2 = (cpu - trends['mu_cpu']) / trends['sigma_cpu']
+                f3 = (err - trends['mu_error']) / trends['sigma_error']
+                f4 = (pay - trends['mu_payload']) / trends['sigma_payload']
+                f5 = 1 if 2 <= dt.hour <= 6 else 0 
+                
+                score = (0.3 * f1) + (0.2 * f2) + (0.2 * f3) + (0.2 * f4) + (0.1 * f5)
+                
+                
+                if score > 5:
+                    reasons = []
+                    if lat > 1000: reasons.append(f"Latency Spike ({lat}ms)")
+                    if err > 15: reasons.append(f"High Error Rate ({err}%)")
+                    if pay > 2000: reasons.append(f"Payload Anomaly ({pay}KB)")
+                    
+                    msg = f"Anomaly Score: {score:.2f} > 5\n*Triggers:* {', '.join(reasons)}"
+                    print(f"⚠️ {msg}")
                     
                     
-                    current_time = time.time()
-                    if current_time - last_alert_time.get(user, 0) > 10:
-                        send_slack_notification(alert_msg)
-                        last_alert_time[user] = current_time
-                    
-                   
-                    consecutive_errors[user] = -5 
+                    if time.time() - last_alert > 10:
+                        send_slack_notification(msg)
+                        last_alert = time.time()
 
-            except Exception as e:
+            except Exception:
                 pass 
 
 if __name__ == "__main__":
-    monitor_live_traffic()
+    track_and_analyze()

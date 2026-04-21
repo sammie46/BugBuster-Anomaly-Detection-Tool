@@ -2,47 +2,40 @@ import time
 import random
 from datetime import datetime
 
-ONLINE_LOG = 'app.log'
-USERS = ['alice', 'bob', 'charlie', 'diana']
+ONLINE_LOG = 'online_data.log'
 
-def stream_online_data():
-    print("--- BugBuster: Starting LIVE Online Data Stream ---")
-    
-   
+def simulate_online_data():
+    print("🌐 Starting Online DATA generation...")
     open(ONLINE_LOG, 'w').close() 
-    
-    attack_started = False
     start_time = time.time()
     
     with open(ONLINE_LOG, 'a') as f:
         while True:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            now = datetime.now()
+            hour = now.hour
             elapsed = time.time() - start_time
             
         
-            if elapsed > 15:
-                if not attack_started:
-                    print("\n🚨 SIMULATING ATTACK: 'charlie' is brute-forcing and sending anomalous payloads!\n")
-                    attack_started = True
-                
-                user = 'charlie'
-                payload_size = random.randint(5000, 10000) 
-                log_line = f"{now} ERROR: User '{user}' wrong password. Payload: {payload_size}B\n"
-                
+            if 2 <= hour <= 6:
+                lat, cpu, pay = random.randint(50, 120), random.randint(10, 35), random.randint(50, 200)
             else:
-                
-                user = random.choice(USERS)
-                payload_size = random.randint(100, 500)
-                if random.random() < 0.95:
-                    log_line = f"{now} INFO: User '{user}' logged in smoothly. Payload: {payload_size}B\n"
-                else:
-                    log_line = f"{now} ERROR: User '{user}' wrong password. Payload: {payload_size}B\n"
-
+                lat, cpu, pay = random.randint(100, 300), random.randint(30, 75), random.randint(150, 800)
+            err = random.randint(0, 3) 
+            
+         
+            if elapsed > 15:
+                case = random.choice([1, 2, 3])
+                if case == 1: lat, cpu = random.randint(3000, 5000), random.randint(90, 100)
+                elif case == 2: err = random.randint(25, 45)
+                elif case == 3: 
+                    now = now.replace(hour=3)
+                    pay = random.randint(5000, 15000)
+                time.sleep(3) 
+            
+            log_line = f"{now.strftime('%Y-%m-%d %H:%M:%S')},{lat},{cpu},{err},{pay}\n"
             f.write(log_line)
             f.flush()
-            print(f"Live: {log_line.strip()}")
-            
-            time.sleep(0.5 if attack_started else 2.0)
+            time.sleep(1.0)
 
 if __name__ == "__main__":
-    stream_online_data()
+    simulate_online_data()

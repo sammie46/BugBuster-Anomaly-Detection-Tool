@@ -1,34 +1,29 @@
 import random
+import csv
 from datetime import datetime, timedelta
 
-HISTORICAL_LOG = 'historical.log'
-USERS = ['alice', 'bob', 'charlie', 'diana']
+HISTORY_FILE = 'historical_logs.csv'
 
-def generate_historical_data(days=5):
-    print(f"--- BugBuster: Generating {days} days of Historical Data ---")
+def generate_historical_data():
+    print("⏳ Generating 72 hours of historical baseline data...")
+    start_time = datetime.now() - timedelta(days=3)
     
-    with open(HISTORICAL_LOG, 'w') as f:
-       
-        start_date = datetime.now() - timedelta(days=days)
+    with open(HISTORY_FILE, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['timestamp', 'api_latency_ms', 'cpu_usage_pct', 'error_rate_pct', 'avg_payload_kb'])
         
-        
-        for day in range(days):
-            current_date = start_date + timedelta(days=day)
-            for _ in range(50):
-                user = random.choice(USERS)
-                
-               
-                payload_size = random.randint(100, 500) 
-                
-               
-                if random.random() < 0.95:
-                    f.write(f"{current_date.strftime('%Y-%m-%d %H:%M:%S')} INFO: User '{user}' logged in smoothly. Payload: {payload_size}B\n")
-                else:
-                    f.write(f"{current_date.strftime('%Y-%m-%d %H:%M:%S')} ERROR: User '{user}' wrong password. Payload: {payload_size}B\n")
-                
-                current_date += timedelta(minutes=random.randint(5, 30))
-                
-    print("✅ Historical Data successfully saved in 'historical.log'.")
+        for i in range(72 * 60): 
+            current_time = start_time + timedelta(minutes=i)
+            hour = current_time.hour
+            
+            if 2 <= hour <= 6:
+                lat, cpu, pay = random.randint(50, 120), random.randint(10, 35), random.randint(50, 200)
+            else:
+                lat, cpu, pay = random.randint(100, 300), random.randint(30, 75), random.randint(150, 800)
+            err = random.randint(0, 3) 
+            writer.writerow([current_time.strftime("%Y-%m-%d %H:%M:%S"), lat, cpu, err, pay])
+            
+    print(f"✅ Historical logs ready in {HISTORY_FILE}")
 
 if __name__ == "__main__":
     generate_historical_data()
