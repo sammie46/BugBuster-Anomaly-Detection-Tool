@@ -2,7 +2,7 @@ import time
 import random
 from datetime import datetime
 
-ONLINE_LOG = 'online_data.log'
+ONLINE_LOG = 'data/online_data.log'
 
 def simulate_online_data():
     print("🌐 Starting Online DATA generation...")

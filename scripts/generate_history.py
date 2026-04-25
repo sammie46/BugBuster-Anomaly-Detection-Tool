@@ -2,7 +2,7 @@ import random
 import csv
 from datetime import datetime, timedelta
 
-HISTORY_FILE = 'historical_logs.csv'
+HISTORY_FILE = 'data/historical_logs.csv'
 
 def generate_historical_data():
     print("⏳ Generating 72 hours of historical baseline data...")

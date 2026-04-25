@@ -2,8 +2,8 @@ import json
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
-HISTORY_FILE = 'historical_logs.csv'
-TRENDS_FILE = 'trends.json'
+HISTORY_FILE = 'data/historical_logs.csv'
+TRENDS_FILE = 'data/trends.json'
 
 def build_trends_with_ml():
     print("🤖 Analyzing historical data and building trends using ML...")

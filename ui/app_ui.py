@@ -4,8 +4,8 @@ import time
 import os
 import json
 
-ONLINE_LOG = 'online_data.log'
-TRENDS_FILE = 'trends.json'
+ONLINE_LOG = 'data/online_data.log'
+TRENDS_FILE = 'data/trends.json'
 
 st.set_page_config(
     page_title="BugBuster AIC",

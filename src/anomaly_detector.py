@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ONLINE_LOG = 'online_data.log'
-TRENDS_FILE = 'trends.json'
+ONLINE_LOG = 'data/online_data.log'
+TRENDS_FILE = 'data/trends.json'
 SLACK_WEBHOOK = os.getenv("SLACK_WEBHOOK_URL")
 
 def send_slack_notification(message, suggested_action):
